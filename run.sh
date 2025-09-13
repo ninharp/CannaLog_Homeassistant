@@ -71,22 +71,6 @@ login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
 from app import routes, models
-
-# Create a default admin user if none exists
-@app.before_first_request
-def create_admin_user():
-    with app.app_context():
-        from app.models import User
-        from werkzeug.security import generate_password_hash
-        if not User.query.first():
-            admin = User(
-                username='admin',
-                email='admin@cannalog.local',
-                password_hash=generate_password_hash('admin123'),
-                is_admin=True
-            )
-            db.session.add(admin)
-            db.session.commit()
 EOF
 
 bashio::log.info "Starting CannaLog..."
@@ -98,8 +82,27 @@ cd /app
 python3 -c "
 from app import app, db
 with app.app_context():
-    db.create_all()
-" || bashio::log.warning "Database already exists or initialization failed"
+    try:
+        db.create_all()
+        print('Database tables created successfully')
+        
+        # Create default admin user if none exists
+        from app.models import User
+        from werkzeug.security import generate_password_hash
+        if not User.query.first():
+            admin = User(
+                username='admin',
+                password=generate_password_hash('admin123')
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print('Default admin user created: admin/admin123')
+        else:
+            print('Users already exist, skipping admin creation')
+            
+    except Exception as e:
+        print(f'Database initialization error: {e}')
+" || bashio::log.warning "Database initialization completed with warnings"
 
 # Set proper permissions
 chown -R root:root /app
