@@ -1,0 +1,40 @@
+# Home Assistant Addon .gitignore
+
+# Development files
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test files
+test_*
+*_test.py
+
+# CannaLog specific
+cannalog/.git/
+cannalog/__pycache__/
+cannalog/*.pyc
+cannalog/uploads/
+cannalog/*.db
+cannalog/.env
+
+# Temporary files
+*.tmp
+*.log
