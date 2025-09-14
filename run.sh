@@ -1,13 +1,7 @@
 #!/usr/bin/with-contenv bashio
 
 # Set up environment variables (robust for local and HA)
-if [ -z "$SECRET_KEY" ]; then
-    if command -v bashio >/dev/null 2>&1; then
-        SECRET_KEY=$(bashio::config 'secret_key')
-    else
-        SECRET_KEY="dev-secret-key"
-    fi
-fi
+SECRET_KEY=$(bashio::config 'secret_key')
 export SECRET_KEY
 echo "DEBUG: run.sh SECRET_KEY is: $SECRET_KEY"
 
