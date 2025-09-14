@@ -1,9 +1,10 @@
 
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.19
 
+# Use the official Home Assistant Add-on Alpine base image
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:14.0.3
 FROM $BUILD_FROM
 
-# Install Python and pip
+# Install Python and pip (bashio is already included)
 RUN apk add --no-cache python3 py3-pip
 RUN ln -sf python3 /usr/bin/python
 

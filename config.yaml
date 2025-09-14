@@ -1,6 +1,6 @@
 name: "CannaLog"
 description: "A modern web application for managing plants, environments, measurements, actions and images"
-version: "1.0.3"
+version: "1.0.4"
 slug: "cannalog"
 init: false
 arch:
