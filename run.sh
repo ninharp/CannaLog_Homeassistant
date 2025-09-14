@@ -108,7 +108,7 @@ with app.app_context():
 # Set proper permissions
 chown -R root:root /app
 chmod -R 755 /app
-chmod -R 777 /share/cannalog
+# chmod -R 777 /share/cannalog
 
 bashio::log.info "CannaLog configuration complete. Starting application..."
 
