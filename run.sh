@@ -1,5 +1,9 @@
 #!/bin/sh
 
+if [ -f /usr/lib/bashio/bashio.sh ]; then
+  . /usr/lib/bashio/bashio.sh
+fi
+
 
 # Set up environment variables (robust for local and HA)
 if [ -z "$SECRET_KEY" ]; then
