@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/with-contenv bashio
 
 # Set up environment variables (robust for local and HA)
 if [ -z "$SECRET_KEY" ]; then
