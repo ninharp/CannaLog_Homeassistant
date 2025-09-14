@@ -1,11 +1,24 @@
 #!/bin/sh
 
-# Get options from Home Assistant
-SECRET_KEY=$(bashio::config 'secret_key')
-DEBUG=$(bashio::config 'debug')
 
-# Set up environment variables
+# Set up environment variables (robust for local and HA)
+if [ -z "$SECRET_KEY" ]; then
+    if command -v bashio >/dev/null 2>&1; then
+        SECRET_KEY=$(bashio::config 'secret_key')
+    else
+        SECRET_KEY="dev-secret-key"
+    fi
+fi
 export SECRET_KEY
+echo "DEBUG: run.sh SECRET_KEY is: $SECRET_KEY"
+
+if [ -z "$DEBUG" ]; then
+    if command -v bashio >/dev/null 2>&1; then
+        DEBUG=$(bashio::config 'debug')
+    else
+        DEBUG="0"
+    fi
+fi
 export DEBUG
 export FLASK_APP=run.py
 
