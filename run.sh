@@ -5,14 +5,9 @@ SECRET_KEY=$(bashio::config 'secret_key')
 export SECRET_KEY
 echo "DEBUG: run.sh SECRET_KEY is: $SECRET_KEY"
 
-if [ -z "$DEBUG" ]; then
-    if command -v bashio >/dev/null 2>&1; then
-        DEBUG=$(bashio::config 'debug')
-    else
-        DEBUG="0"
-    fi
-fi
+DEBUG=$(bashio::config 'debug')
 export DEBUG
+
 export FLASK_APP=run.py
 
 # Create symlinks for persistent data
