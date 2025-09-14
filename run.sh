@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/bin/sh
 
 # Get options from Home Assistant
 SECRET_KEY=$(bashio::config 'secret_key')
