@@ -16,7 +16,7 @@ if [ ! -L "/app/cannalog.db" ]; then
     else
         # Initialize database if it doesn't exist
         cd /app
-        python3 -c "from app import db; db.create_all()" || true
+    /venv/bin/python -c "from app import db; db.create_all()" || true
         mv cannalog.db "/share/cannalog/database/cannalog.db" 2>/dev/null || true
         ln -sf "/share/cannalog/database/cannalog.db" "/app/cannalog.db"
     fi
@@ -79,7 +79,7 @@ bashio::log.info "Starting CannaLog..."
 cd /app
 
 # Initialize database if needed
-python3 -c "
+/venv/bin/python -c "
 from app import app, db
 with app.app_context():
     try:
@@ -111,5 +111,5 @@ chmod -R 777 /share/cannalog
 
 bashio::log.info "CannaLog configuration complete. Starting application..."
 
-# Start the Flask application with gunicorn
-exec gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 --access-logfile - --error-logfile - run:app
+# Start the Flask application with gunicorn from virtualenv
+exec /venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 --access-logfile - --error-logfile - run:app

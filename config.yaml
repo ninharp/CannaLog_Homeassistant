@@ -33,4 +33,4 @@ options:
 schema:
   secret_key: str
   debug: bool
-image: "ghcr.io/{arch}/addon-cannalog"
+image: "ghcr.io/ninharp/addon-cannalog"
