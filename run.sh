@@ -1,11 +1,16 @@
 #!/usr/bin/with-contenv bashio
 
 # Set up environment variables (robust for local and HA)
+
 SECRET_KEY=$(bashio::config 'secret_key')
 export SECRET_KEY
 
 DEBUG=$(bashio::config 'debug')
 export DEBUG
+
+# Maximum of allowed upload size in MB
+MAX_UPLOAD_MB=$(bashio::config 'max_upload_mb')
+export MAX_UPLOAD_MB
 
 export FLASK_APP=run.py
 

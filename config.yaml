@@ -30,7 +30,9 @@ map:
 options:
   secret_key: "change-this-secret-key-in-production"
   debug: false
+  max_upload_mb: 20
 schema:
   secret_key: str
   debug: bool
-image: "ghcr.io/ninharp/addon-cannalog"
+  max_upload_mb: int
+#image: "ghcr.io/ninharp/addon-cannalog"
