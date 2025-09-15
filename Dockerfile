@@ -3,7 +3,23 @@ ARG BUILD_FROM=ghcr.io/hassio-addons/base:14.0.3
 FROM $BUILD_FROM
 
 # Install Python and pip (bashio is already included)
-RUN apk add --no-cache python3 py3-pip
+RUN apk add --no-cache \
+    python3 \
+    py3-pip \
+    py3-cffi \
+    py3-pillow \
+    py3-tinycss2 \
+    py3-cssselect2 \
+    py3-lxml \
+    py3-cairocffi \
+    cairo \
+    pango \
+    gdk-pixbuf \
+    libffi \
+    gobject-introspection \
+    ttf-opensans \
+    ttf-dejavu \
+    fontconfig
 RUN ln -sf python3 /usr/bin/python
 
 # Create app directory
@@ -22,12 +38,13 @@ RUN echo "Flask==2.3.3" > requirements.txt && \
     echo "gunicorn==21.2.0" >> requirements.txt && \
     echo "Pillow==10.0.0" >> requirements.txt && \
     echo "Werkzeug==2.3.7" >> requirements.txt && \
-    echo "WeasyPrint==61.2" >> requirements.txt
+    echo "WeasyPrint==60.1" >> requirements.txt
 
 # Set up virtualenv and install Python dependencies
 RUN python3 -m venv /venv \
     && . /venv/bin/activate \
     && pip install --no-cache-dir -r requirements.txt
+RUN . /venv/bin/activate && pip install 'pydyf<0.7'
 ENV PATH="/venv/bin:$PATH"
 
 # Create necessary directories
