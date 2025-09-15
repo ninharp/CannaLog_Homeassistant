@@ -86,10 +86,11 @@
   {% set action_logs = logs|selectattr('__class__.__name__', 'equalto', 'PlantActionLog')|list %}
   {% set combined = [] %}
   {% for log in plant_logs %}
-    {% set _ = combined.append({'type': 'plant', 'log': log, 'date': log.date}) %}
+    {% set plant = log.plant if log.plant is defined and log.plant else (plants|selectattr('id', 'equalto', log.plant_id)|first) %}
+    {% set _ = combined.append({'type': 'plant', 'log': log, 'date': log.date, 'plant': plant}) %}
   {% endfor %}
   {% for log in action_logs %}
-    {% set _ = combined.append({'type': 'action', 'log': log, 'date': log.date}) %}
+    {% set _ = combined.append({'type': 'action', 'log': log, 'date': log.date, 'plant': log.plant}) %}
   {% endfor %}
   {% set combined = combined|sort(attribute='date', reverse=True) %}
 
@@ -116,49 +117,32 @@
       </tbody>
     </table>
   {% endif %}
+  <br/>
 
   {% if combined %}
     <h4>Pflanzen-Logs & Aktionen</h4>
-    {% set last_plant_id = None %}
     {% set plant_entries = {} %}
     {# Gruppiere alle Einträge nach Pflanze #}
     {% for entry in combined %}
-      {% set plant = entry.log.plant if entry.log.plant is defined else None %}
+      {% set plant = entry.plant %}
       {% if plant %}
         {% if plant.id not in plant_entries %}
-          {% set _ = plant_entries.update({plant.id: {'plant': plant, 'logs': [], 'actions': []}}) %}
+          {% set _ = plant_entries.update({plant.id: {'plant': plant, 'entries': []}}) %}
         {% endif %}
-        {% if entry.type == 'plant' %}
-          {% set _ = plant_entries[plant.id]['logs'].append(entry) %}
-        {% else %}
-          {% set _ = plant_entries[plant.id]['actions'].append(entry) %}
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-
-    {# Pflanzenlogs und Aktionen in einer Tabelle, nach Datum sortiert #}
-    {% set plant_entries = {} %}
-    {% for log in logs %}
-      {% if log.__class__.__name__ == 'PlantLog' or log.__class__.__name__ == 'PlantActionLog' %}
-        {% set plant = log.plant if log.plant is defined else None %}
-        {% if plant %}
-          {% if plant.id not in plant_entries %}
-            {% set _ = plant_entries.update({plant.id: {'plant': plant, 'entries': []}}) %}
-          {% endif %}
-          {% set _ = plant_entries[plant.id]['entries'].append(log) %}
-        {% endif %}
+        {% set _ = plant_entries[plant.id]['entries'].append(entry) %}
       {% endif %}
     {% endfor %}
     {% for plant_id, data in plant_entries.items() %}
       {% set plant = data['plant'] %}
+      <div style="margin-bottom:1.2em;">
+        <div style="font-size:1.05em;">
+            Pflanze: {{ plant.pflanzenname }} | Anzahl: {{ plant_counts[plant.id] if plant_counts and plant.id in plant_counts else 1 }} | Strain: {{ plant.strain }} | Medium: {{ media_type_map.get(plant.medium_type, plant.medium_type|capitalize) }}
+            {% if plant.notes %}<br><span>Notizen: {{ plant.notes }}</span>{% endif %}
+        </div>
+      </div>
+      <div style="height:0.7em;"></div>
       <table class="table table-bordered table-sm" style="width:100%; margin-bottom:1.5em;">
         <thead>
-          <tr style="background:#f3f3f3; font-size:1.05em;">
-            <th colspan="4">
-              Pflanze: {{ plant.pflanzenname }} <br>Anzahl: {{ plant_counts[plant.id] if plant_counts and plant.id in plant_counts else 1 }} <br> Strain: {{ plant.strain }} <br> Medium: {{ media_type_map.get(plant.medium_type, plant.medium_type|capitalize) }}<br>
-              {% if plant.notes %}<span>Notizen: {{ plant.notes }}</span>{% endif %}
-            </th>
-          </tr>
           <tr>
             <th>Datum</th>
             <th>Pflanze</th>
@@ -167,25 +151,23 @@
           </tr>
         </thead>
         <tbody>
-        {% for log in data['entries']|sort(attribute='date', reverse=True) %}
+        {% for entry in data['entries']|sort(attribute='date', reverse=True) %}
           <tr>
-            <td>{{ log.date.strftime('%d.%m.%Y') }}</td>
+            <td>{{ entry.date.strftime('%d.%m.%Y') }}</td>
             <td>{{ plant.pflanzenname }}</td>
             <td>
-              {% if log.__class__.__name__ == 'PlantLog' %}
-                {{ log.notes }}
+              {% if entry.type == 'plant' %}
+                {{ entry.log.notes }}
               {% else %}
-                <b>{{ log.action|capitalize }}</b>{% if log.notes %}: {{ log.notes }}{% endif %}
+                {{ entry.log.action|capitalize }}{% if entry.log.notes %}: {{ entry.log.notes }}{% endif %}
               {% endif %}
             </td>
             <td>
-              {% if log.__class__.__name__ == 'PlantLog' %}
-                {% for m in log.measurements %}
+              {% if entry.type == 'plant' %}
+                {% for m in entry.log.measurements %}
                   <div>{{ plant_type_map.get(m.type, m.type) }}: {{ m.value }} {% if m.min_value %}(min: {{ m.min_value }}){% endif %}{% if m.max_value %}(max: {{ m.max_value }}){% endif %}</div>
                 {% endfor %}
-              {% else %}
-                  -
-              {% endif %}
+              {% else %}-{% endif %}
             </td>
           </tr>
         {% endfor %}
