@@ -10,7 +10,6 @@
         <h1 class="mb-0 fw-bold" style="font-size:2.5rem; line-height:60px;">{{ env.name }}</h1>
     </div>
 
-
 {% set preview_img = None %}
 {% if env.preview_image_id %}
     {% for img in env.images %}
@@ -137,8 +136,11 @@
 {% else %}
 <p>Keine Log-Einträge vorhanden.</p>
 {% endif %}
-<div class="mt-5">
+<div class="mt-5 d-flex align-items-center gap-2">
     <a href="dashboard" class="btn btn-secondary">Zurück</a>
+    <a href="{{ url_for('export_logs', env_id=env.id)|relative_url }}" class="btn btn-secondary" style="background:#8e44ad; color:white;">
+        <span class="bi bi-download"></span>
+    </a>
 </div>
 <script>
     document.getElementById('delete-env-form').onsubmit = function(e) {

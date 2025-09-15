@@ -124,7 +124,16 @@
 <p>Keine Log-Einträge vorhanden.</p>
 {% endif %}
 
-<div class="mt-5">
+<div class="mt-5 d-flex align-items-center gap-2">
     <a href="dashboard" class="btn btn-secondary">Zurück</a>
+    {% if plant.environment %}
+    <a href="{{ url_for('export_logs', env_id=plant.environment.id)|relative_url }}" class="btn btn-secondary" style="background:#8e44ad; color:white;">
+        <span class="bi bi-download"></span>
+    </a>
+    {% else %}
+    <a href="{{ url_for('export_logs')|relative_url }}" class="btn" style="background:#8e44ad; color:white; border-radius:2rem; padding:0.5em 1.5em; font-size:1rem; box-shadow:0 2px 8px #0001;">
+        <span class="bi bi-download"></span>
+    </a>
+    {% endif %}
 </div>
 {% endblock %}

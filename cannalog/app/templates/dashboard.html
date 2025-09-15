@@ -8,8 +8,9 @@
     <h1 class="mb-0 d-inline-block align-middle" style="line-height:100px; vertical-align:middle; margin-left:1rem; margin-right:1.5rem;">Dashboard</h1>
 </div>
 
-<!-- Schnellaktions-Buttons -->
-<div class="d-flex justify-content-center gap-3 mb-4">
+<!-- Schnellaktions-Buttons + Export-Button -->
+<div class="d-flex justify-content-center gap-3 mb-4 align-items-center">
+    <!-- Schnellaktions-Buttons -->
     {% if plants %}
         <a href="{{ url_for('add_plant_action_log')|relative_url }}" class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" style="width:60px; height:60px; font-size:1.7rem;">
             <span>⚡</span>
@@ -46,6 +47,10 @@
             <span class="bi-journal-plus"></span>
         </span>
     {% endif %}
+    <!-- Export-Button rechts -->
+    <a href="{{ url_for('export_logs')|relative_url }}" class="btn d-flex align-items-center justify-content-center" style="background:#8e44ad; color:white; border-radius:50%; width:60px; height:60px; font-size:1.7rem; box-shadow:0 2px 8px #0001;">
+        <span class="bi bi-download"></span>
+    </a>
 </div>
 
 <div class="mx-auto" style="max-width: 600px; min-width:0; width:100%;">
