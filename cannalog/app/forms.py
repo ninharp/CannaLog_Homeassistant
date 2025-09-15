@@ -1,11 +1,20 @@
-
+# --- Log-Export Formular ---
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed
 from flask_login import current_user
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, DateField, IntegerField, FileField, SelectField, FloatField, FieldList, FormField, MultipleFileField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, DateField, IntegerField, FileField, SelectField, FloatField, FieldList, FormField, MultipleFileField, SelectMultipleField
 from wtforms.validators import DataRequired, Length, EqualTo, ValidationError, Optional
 from datetime import date as dt_date
 from app.models import Plant
+
+class LogExportForm(FlaskForm):
+    environment_id = SelectField('Umgebung', coerce=int, validators=[DataRequired()])
+    plant_ids = SelectMultipleField('Pflanzen', coerce=int)
+    include_env_logs = BooleanField('Umgebungs-Logs', default=True)
+    include_plant_logs = BooleanField('Pflanzen-Logs', default=True)
+    include_action_logs = BooleanField('Aktions-Logs', default=True)
+    as_pdf = BooleanField('Als PDF exportieren')
+    submit = SubmitField('Exportieren')
 
 # Aktionen für Pflanzenaktions-Log
 PLANT_ACTIONS = [
