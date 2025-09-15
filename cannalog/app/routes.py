@@ -1,21 +1,13 @@
-# --- Imports ---
-from app import app, db, login_manager, ingress_redirect
+from app import app, db, login_manager
+# --- Log-Export (Umgebungs- und Pflanzen-Logs als Liste oder PDF) ---
+from app.forms import LogExportForm
 from flask import render_template, redirect, url_for, flash, request, send_from_directory
+from flask import make_response
+from weasyprint import HTML
 from flask_login import login_user, logout_user, login_required, current_user
+from flask import jsonify
 from urllib.parse import urlencode
-# Custom unauthorized handler for Flask-Login to fix Ingress next param
-from app import login_manager
-@login_manager.unauthorized_handler
-def unauthorized():
-    next_url = request.path
-    # Remove leading slash if present (Ingress compatibility)
-    if next_url.startswith('/'):
-        next_url = next_url[1:]
-    login_url = 'login'
-    if next_url and next_url != 'login':
-        # Only add next param if not already on login page
-        login_url = f"login?{urlencode({'next': next_url})}"
-    return redirect(login_url)
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
@@ -29,6 +21,93 @@ from wtforms import SelectField, MultipleFileField, SubmitField
 from wtforms.validators import DataRequired
 from flask_wtf.file import FileAllowed
 import re
+
+### API Endpoints for dynamic form population ###
+
+@app.route('/api/environment/<int:env_id>/plants')
+@login_required
+def environment_plants(env_id):
+    plants = Plant.query.filter_by(user_id=current_user.id, environment_id=env_id).all()
+    plant_list = [(p.id, p.pflanzenname) for p in plants]
+    return jsonify(plant_list)
+
+### App endpoints ###
+
+@app.route('/logs/export', methods=['GET', 'POST'])
+@login_required
+def export_logs():
+    environments = Environment.query.filter_by(user_id=current_user.id).all()
+    plants = Plant.query.filter_by(user_id=current_user.id).all()
+    preselect_env = request.args.get('env_id', type=int)
+    form = LogExportForm()
+    form.environment_id.choices = [(e.id, e.name) for e in environments]
+    form.plant_ids.choices = [(p.id, p.pflanzenname) for p in plants]
+    if preselect_env and any(e.id == preselect_env for e in environments):
+        form.environment_id.data = preselect_env
+    logs = []
+    from app.forms import MEASUREMENT_TYPES, ENV_MEASUREMENT_TYPES, ENV_MEDIA_TYPES
+    # Mapping für Medium-Type
+    media_type_map = dict(ENV_MEDIA_TYPES)
+    if form.validate_on_submit():
+        selected_env = Environment.query.get(form.environment_id.data)
+        selected_plants = [Plant.query.get(pid) for pid in form.plant_ids.data]
+        if form.include_env_logs.data:
+            logs += EnvironmentLog.query.filter_by(environment_id=selected_env.id).all()
+        if form.include_plant_logs.data:
+            for plant in selected_plants:
+                logs += PlantLog.query.filter_by(plant_id=plant.id).all()
+        if form.include_action_logs.data:
+            for plant in selected_plants:
+                logs += PlantActionLog.query.filter_by(plant_id=plant.id).all()
+        if 'pdf' in request.form:
+            # Pflanzensummary: Anzahl berechnen
+            plant_counts = {p.id: p.count for p in plants}
+            from datetime import datetime
+            generated_at = datetime.now().strftime('%d.%m.%Y %H:%M')
+            # Logo als base64 für PDF einbetten
+            import base64
+            import os
+            logo_path = os.path.join(app.root_path, 'static/assets/logo_small.png')
+            logo_b64 = None
+            try:
+                with open(logo_path, 'rb') as f:
+                    logo_b64 = 'data:image/png;base64,' + base64.b64encode(f.read()).decode('utf-8')
+            except Exception:
+                logo_b64 = None
+            html = render_template(
+                'logs_export.html',
+                form=form,
+                logs=logs,
+                environments=environments,
+                plants=plants,
+                MEASUREMENT_TYPES=MEASUREMENT_TYPES,
+                ENV_MEASUREMENT_TYPES=ENV_MEASUREMENT_TYPES,
+                media_type_map=media_type_map,
+                pdf_export=True,
+                logo_b64=logo_b64,
+                generated_at=generated_at,
+                plant_counts=plant_counts
+            )
+            pdf = HTML(string=html, base_url=request.base_url).write_pdf()
+            response = make_response(pdf)
+            response.headers['Content-Type'] = 'application/pdf'
+            response.headers['Content-Disposition'] = 'attachment; filename=logs_export.pdf'
+            return response
+        return render_template('logs_export.html', form=form, logs=logs, environments=environments, plants=plants, MEASUREMENT_TYPES=MEASUREMENT_TYPES, ENV_MEASUREMENT_TYPES=ENV_MEASUREMENT_TYPES, media_type_map=media_type_map)
+    return render_template('logs_export.html', form=form, logs=None, environments=environments, plants=plants, MEASUREMENT_TYPES=MEASUREMENT_TYPES, ENV_MEASUREMENT_TYPES=ENV_MEASUREMENT_TYPES)
+
+# Custom unauthorized handler for Flask-Login to fix Ingress next param
+@login_manager.unauthorized_handler
+def unauthorized():
+    next_url = request.path
+    # Remove leading slash if present (Ingress compatibility)
+    if next_url.startswith('/'):
+        next_url = next_url[1:]
+    login_url = 'login'
+    if next_url and next_url != 'login':
+        # Only add next param if not already on login page
+        login_url = f"login?{urlencode({'next': next_url})}"
+    return redirect(login_url)
 
 # Pflanzenaktions-Logbuch
 
