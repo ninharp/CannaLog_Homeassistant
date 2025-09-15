@@ -1,17 +1,21 @@
-
-
-
-
-# ...EXISTING CODE...
-
-# Globale Routen ans Dateiende verschoben:
-
-# --- ab hier am Dateiende einfügen ---
-
-
-from app import app, db, login_manager
+# --- Imports ---
+from app import app, db, login_manager, ingress_redirect
 from flask import render_template, redirect, url_for, flash, request, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
+from urllib.parse import urlencode
+# Custom unauthorized handler for Flask-Login to fix Ingress next param
+from app import login_manager
+@login_manager.unauthorized_handler
+def unauthorized():
+    next_url = request.path
+    # Remove leading slash if present (Ingress compatibility)
+    if next_url.startswith('/'):
+        next_url = next_url[1:]
+    login_url = 'login'
+    if next_url and next_url != 'login':
+        # Only add next param if not already on login page
+        login_url = f"login?{urlencode({'next': next_url})}"
+    return redirect(login_url)
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import os
@@ -24,6 +28,7 @@ from flask_wtf import FlaskForm
 from wtforms import SelectField, MultipleFileField, SubmitField
 from wtforms.validators import DataRequired
 from flask_wtf.file import FileAllowed
+import re
 
 # Pflanzenaktions-Logbuch
 
@@ -57,8 +62,8 @@ def add_plant_action_log():
         flash('Pflanzenaktion hinzugefügt.', 'success')
         # Wenn kein plant_id als Query-Parameter gesetzt ist, gehe zum Dashboard
         if not preselect_id:
-            return redirect(url_for('dashboard'))
-        return redirect(url_for('plant_overview', plant_id=form.plant_id.data))
+            return render_template('redirect.html', target='dashboard')
+        return render_template('redirect.html', target=f"plant/{form.plant_id.data}")
     return render_template('plant_action_log_form.html', form=form)
 
 @app.route('/plant_actions/<int:log_id>/edit', methods=['GET', 'POST'])
@@ -68,7 +73,7 @@ def edit_plant_action_log(log_id):
     plant = Plant.query.get_or_404(log.plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('plant_action_logs'))
+    return redirect('plant_actions')
     plants = Plant.query.filter_by(user_id=current_user.id).all()
     form = PlantActionLogForm(obj=log)
     form.plant_id.choices = [(p.id, p.pflanzenname) for p in plants]
@@ -78,7 +83,7 @@ def edit_plant_action_log(log_id):
         log.action = form.action.data
         log.notes = form.notes.data
         db.session.commit()
-        return redirect(url_for('plant_overview', plant_id=log.plant_id))
+        return render_template('redirect.html', target=f"plant/{log.plant_id}")
     return render_template('plant_action_log_form.html', form=form, edit=True, log=log)
 
 @app.route('/plant_actions/<int:log_id>/delete', methods=['POST'])
@@ -88,11 +93,11 @@ def delete_plant_action_log(log_id):
     plant = Plant.query.get_or_404(log.plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('plant_action_logs'))
+        return redirect('plant_actions')
     db.session.delete(log)
     db.session.commit()
     flash('Pflanzenaktion gelöscht.', 'success')
-    return redirect(url_for('plant_overview', plant_id=plant.id))
+    return render_template('redirect.html', target=f"plant/{plant.id}")
 from app import app, db, login_manager
 from flask import render_template, redirect, url_for, flash, request, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
@@ -105,15 +110,15 @@ from app.lamp_model import Lamp
 from app.forms import RegistrationForm, LoginForm, PlantForm, EnvironmentForm, PlantLogForm, EnvironmentLogForm
 
 # EnvironmentLog: Log-Einträge für Umgebungen
-@app.route('/environment/<int:env_id>/logs')
-@login_required
-def environment_logs(env_id):
-    env = Environment.query.get_or_404(env_id)
-    if env.user_id != current_user.id:
-        flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
-    logs = EnvironmentLog.query.filter_by(environment_id=env.id).order_by(EnvironmentLog.date.desc()).all()
-    return render_template('environment_logs.html', env=env, logs=logs)
+# @app.route('/environment/<int:env_id>/logs')
+# @login_required
+# def environment_logs(env_id):
+#     env = Environment.query.get_or_404(env_id)
+#     if env.user_id != current_user.id:
+#         flash('Keine Berechtigung.', 'danger')
+#         return render_template('redirect.html', target='dashboard')
+#     logs = EnvironmentLog.query.filter_by(environment_id=env.id).order_by(EnvironmentLog.date.desc()).all()
+#     return render_template('environment_logs.html', env=env, logs=logs)
 
 @app.route('/environment/<int:env_id>/logs/add', methods=['GET', 'POST'])
 @login_required
@@ -121,12 +126,11 @@ def add_environment_log(env_id):
     env = Environment.query.get_or_404(env_id)
     if env.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     from app.models import Measurement
     import logging
     if request.method == 'POST':
         form = EnvironmentLogForm(request.form)
-        logging.warning(f"CSRF-Token im POST: {request.form.get('csrf_token')}")
     else:
         form = EnvironmentLogForm()
         if len(form.measurements.entries) == 0:
@@ -163,7 +167,7 @@ def add_environment_log(env_id):
                 db.session.add(measurement)
         db.session.commit()
         flash('Log-Eintrag hinzugefügt.', 'success')
-        return redirect(url_for('environment_overview', env_id=env.id))
+        return render_template('redirect.html', target=f"environment/{env.id}")
     return render_template('environment_log_form.html', form=form, env=env)
 
 @app.route('/environment/logs/<int:log_id>/edit', methods=['GET', 'POST'])
@@ -173,7 +177,7 @@ def edit_environment_log(log_id):
     env = Environment.query.get_or_404(log.environment_id)
     if env.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     from app.models import Measurement
     import logging
     if request.method == 'POST':
@@ -227,7 +231,8 @@ def edit_environment_log(log_id):
                 db.session.add(measurement)
         db.session.commit()
         flash('Log-Eintrag aktualisiert.', 'success')
-        return redirect(url_for('environment_overview', env_id=env.id))
+        return render_template('redirect.html', target=f"environment/{env.id}")
+    
     return render_template('environment_log_form.html', form=form, env=env, edit=True, log=log)
 
 @app.route('/environment/logs/<int:log_id>/delete', methods=['POST'])
@@ -237,11 +242,11 @@ def delete_environment_log(log_id):
     env = Environment.query.get_or_404(log.environment_id)
     if env.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     db.session.delete(log)
     db.session.commit()
     flash('Log-Eintrag gelöscht.', 'success')
-    return redirect(url_for('environment_overview', env_id=env.id))
+    return render_template('redirect.html', target=f"environment/{env.id}")
 # --- Imports ---
 from app import app, db, login_manager
 from flask import render_template, redirect, url_for, flash, request, send_from_directory
@@ -254,23 +259,23 @@ from app.models import User, Plant, Environment, PlantLog
 from app.lamp_model import Lamp
 from app.forms import RegistrationForm, LoginForm, PlantForm, EnvironmentForm, PlantLogForm, EnvironmentLogForm
 # PlantLog: Log-Einträge für Pflanzen
-@app.route('/plant/<int:plant_id>/logs')
-@login_required
-def plant_logs(plant_id):
-    plant = Plant.query.get_or_404(plant_id)
-    if plant.user_id != current_user.id:
-        flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
-    logs = PlantLog.query.filter_by(plant_id=plant.id).all()
-    actions = PlantActionLog.query.filter_by(plant_id=plant.id).all()
-    # Kombiniere und sortiere chronologisch absteigend
-    combined = [
-        {"type": "log", "obj": log, "date": log.date} for log in logs
-    ] + [
-        {"type": "action", "obj": action, "date": action.date} for action in actions
-    ]
-    combined.sort(key=lambda x: x["date"], reverse=True)
-    return render_template('plant_logs.html', plant=plant, entries=combined)
+# @app.route('/plant/<int:plant_id>/logs')
+# @login_required
+# def plant_logs(plant_id):
+#     plant = Plant.query.get_or_404(plant_id)
+#     if plant.user_id != current_user.id:
+#         flash('Keine Berechtigung.', 'danger')
+#         return render_template('redirect.html', target='dashboard')
+#     logs = PlantLog.query.filter_by(plant_id=plant.id).all()
+#     actions = PlantActionLog.query.filter_by(plant_id=plant.id).all()
+#     # Kombiniere und sortiere chronologisch absteigend
+#     combined = [
+#         {"type": "log", "obj": log, "date": log.date} for log in logs
+#     ] + [
+#         {"type": "action", "obj": action, "date": action.date} for action in actions
+#     ]
+#     combined.sort(key=lambda x: x["date"], reverse=True)
+#     return render_template('plant_logs.html', plant=plant, entries=combined)
 
 @app.route('/plant/<int:plant_id>/logs/add', methods=['GET', 'POST'])
 @login_required
@@ -278,7 +283,7 @@ def add_plant_log(plant_id):
     plant = Plant.query.get_or_404(plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     import logging
     logging.warning(f"POST: {request.method == 'POST'} | formdata keys: {list(request.form.keys())}")
     if request.method == 'POST':
@@ -323,7 +328,7 @@ def add_plant_log(plant_id):
                 db.session.add(measurement)
         db.session.commit()
         flash('Log-Eintrag hinzugefügt.', 'success')
-        return redirect(url_for('plant_overview', plant_id=plant.id))
+        return render_template('redirect.html', target=f"plant/{plant.id}")
     return render_template('plant_log_form.html', form=form, plant=plant)
 
 @app.route('/plant/logs/<int:log_id>/edit', methods=['GET', 'POST'])
@@ -333,7 +338,7 @@ def edit_plant_log(log_id):
     plant = Plant.query.get_or_404(log.plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     from app.models import Measurement
     import logging
     if request.method == 'POST':
@@ -390,7 +395,7 @@ def edit_plant_log(log_id):
                 db.session.add(measurement)
         db.session.commit()
         flash('Log-Eintrag aktualisiert.', 'success')
-        return redirect(url_for('plant_overview', plant_id=plant.id))
+        return render_template('redirect.html', target=f"plant/{plant.id}")
     return render_template('plant_log_form.html', form=form, plant=plant, edit=True, log=log)
 
 @app.route('/plant/logs/<int:log_id>/delete', methods=['POST'])
@@ -400,11 +405,11 @@ def delete_plant_log(log_id):
     plant = Plant.query.get_or_404(log.plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     db.session.delete(log)
     db.session.commit()
     flash('Log-Eintrag gelöscht.', 'success')
-    return redirect(url_for('plant_overview', plant_id=plant.id))
+    return render_template('redirect.html', target=f"plant/{plant.id}")
 from app import app, db, login_manager
 from flask import render_template, redirect, url_for, flash, request, send_from_directory
 from flask_login import login_user, logout_user, login_required, current_user
@@ -423,19 +428,24 @@ def load_user(user_id):
 @app.route('/')
 def index():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        flash('Wilkommen zurück!', 'success')
+        return render_template('redirect.html', target='dashboard')
     return render_template('index.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
+        # Prüfe, ob der Benutzername schon existiert
+        if User.query.filter_by(username=form.username.data).first():
+            flash('Benutzername existiert bereits. Bitte wähle einen anderen.', 'danger')
+            return render_template('register.html', form=form)
         hashed_pw = generate_password_hash(form.password.data)
         user = User(username=form.username.data, password=hashed_pw)
         db.session.add(user)
         db.session.commit()
         flash('Registrierung erfolgreich! Bitte einloggen.', 'success')
-        return redirect(url_for('login'))
+        return render_template('redirect.html', target="login")
     return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -445,7 +455,8 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
         if user and check_password_hash(user.password, form.password.data):
             login_user(user, remember=form.remember.data)
-            return redirect(url_for('dashboard'))
+            flash('Login erfolgreich! Willkommen zurück.', 'success')
+            return render_template('redirect.html', target="dashboard")
         else:
             flash('Login fehlgeschlagen. Prüfe Benutzername und Passwort.', 'danger')
     return render_template('login.html', form=form)
@@ -454,7 +465,7 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect('/')
 
 @app.route('/dashboard')
 @login_required
@@ -529,7 +540,7 @@ def add_plant():
                 db.session.add(img)
         db.session.commit()
         flash('Pflanze hinzugefügt!', 'success')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     return render_template('plant_form.html', form=form)
 
 
@@ -539,7 +550,7 @@ def edit_plant(plant_id):
     plant = Plant.query.get_or_404(plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     form = PlantForm(obj=plant)
     # WTForms MultipleFileField: ensure .images is always set, even if no new upload
     if request.method == 'POST' and 'images' not in request.files:
@@ -570,7 +581,7 @@ def edit_plant(plant_id):
             db.session.delete(img)
             db.session.commit()
             flash('Bild gelöscht.', 'success')
-        return redirect(url_for('edit_plant', plant_id=plant_id))
+        return render_template('redirect.html', target=f"plant/{plant_id}/edit")
 
     if form.validate_on_submit():
         plant.pflanzenname = form.pflanzenname.data
@@ -603,7 +614,7 @@ def edit_plant(plant_id):
         db.session.refresh(plant)
         db.session.expire(plant, ['images'])
         flash('Pflanze aktualisiert!', 'success')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
 
     # Am Ende: immer das Formular rendern, wenn kein Redirect erfolgt ist
     return render_template('plant_form.html', form=form, plant=plant, edit=True)
@@ -615,7 +626,7 @@ def plant_overview(plant_id):
     plant = Plant.query.get_or_404(plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     logs = PlantLog.query.filter_by(plant_id=plant.id).all()
     actions = PlantActionLog.query.filter_by(plant_id=plant.id).all()
     combined = [
@@ -625,8 +636,7 @@ def plant_overview(plant_id):
     ]
     combined.sort(key=lambda x: x["date"], reverse=True)
     return render_template('plant_overview.html', plant=plant, entries=combined)
-
-    return render_template('plant_form.html', form=form, plant=plant)
+    # return render_template('plant_form.html', form=form, plant=plant)
 
 @app.route('/plant/<int:plant_id>/delete', methods=['POST'])
 @login_required
@@ -634,7 +644,7 @@ def delete_plant(plant_id):
     plant = Plant.query.get_or_404(plant_id)
     if plant.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     # Delete all images from disk
     from app.models import PlantImage
     import os
@@ -646,7 +656,7 @@ def delete_plant(plant_id):
     db.session.delete(plant)
     db.session.commit()
     flash('Pflanze gelöscht! Alle zugehörigen Bilder wurden entfernt.', 'success')
-    return redirect(url_for('dashboard'))
+    return render_template('redirect.html', target='dashboard')
 
 @app.route('/environment/add', methods=['GET', 'POST'])
 @login_required
@@ -688,7 +698,7 @@ def add_environment():
             db.session.add(lamp)
         db.session.commit()
         flash('Umgebung hinzugefügt!', 'success')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     return render_template('environment_form.html', form=form)
 
 @app.route('/environment/<int:env_id>/edit', methods=['GET', 'POST'])
@@ -697,7 +707,7 @@ def edit_environment(env_id):
     env = Environment.query.get_or_404(env_id)
     if env.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
 
     from app.models import EnvironmentImage
     if request.method == 'POST':
@@ -735,10 +745,9 @@ def edit_environment(env_id):
                 db.session.delete(img)
                 db.session.commit()
                 flash('Bild gelöscht.', 'success')
-                return redirect(url_for('edit_environment', env_id=env.id))
+                return render_template('redirect.html', target=f'environment/{env.id}/edit')
         if form.validate_on_submit():
             import sys
-            print(f"[DEBUG] Speichern: Vorher: {env.name}", file=sys.stderr)
             env.name = form.name.data
             env.auto_watering = form.auto_watering.data
             env.light_enabled = form.light_enabled.data
@@ -753,7 +762,6 @@ def edit_environment(env_id):
             except Exception:
                 selected_preview = -1
             env.preview_image_id = selected_preview if selected_preview != -1 else None
-            print(f"[DEBUG] Speichern: Nachher: {env.name}, preview_image_id={env.preview_image_id}", file=sys.stderr)
             # Bilder hinzufügen (nur neue, alte bleiben erhalten)
             files = request.files.getlist('images')
             for file in files:
@@ -776,9 +784,8 @@ def edit_environment(env_id):
                 db.session.add(lamp)
             db.session.commit()
             db.session.refresh(env)
-            print(f"[DEBUG] Speichern: Nach Commit: {env.name}", file=sys.stderr)
             flash('Umgebung aktualisiert!', 'success')
-            return redirect(url_for('dashboard'))
+            return render_template('redirect.html', target='dashboard')
         # Bei POST mit Fehlern: Formular mit Benutzereingaben anzeigen
         return render_template('environment_form.html', form=form, env=env)
     # GET oder nach Redirect: Environment frisch laden und Lampen-FieldList aus DB initialisieren
@@ -805,7 +812,7 @@ def delete_environment(env_id):
     env = Environment.query.get_or_404(env_id)
     if env.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     # Delete all environment images from disk
     from app.models import EnvironmentImage, Plant
     import os
@@ -834,7 +841,7 @@ def delete_environment(env_id):
         db.session.delete(env)
         db.session.commit()
         flash('Umgebung und alle zugehörigen Pflanzen und Bilder wurden gelöscht.', 'success')
-    return redirect(url_for('dashboard'))
+    return render_template('redirect.html', target='dashboard')
 
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
@@ -846,25 +853,21 @@ from app.models import EnvironmentImage
 @login_required
 def delete_environment_image(env_id, image_id):
     import sys
-    print(f"[DEBUG] Bild löschen: image_id={image_id}, env_id={env_id}", file=sys.stderr)
     img = EnvironmentImage.query.get_or_404(image_id)
     env = Environment.query.get_or_404(env_id)
     if env.user_id != current_user.id or img.environment_id != env.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('edit_environment', env_id=env_id))
+        return render_template('redirect.html', target=f"environment/{env_id}/edit")
     # Datei löschen
     try:
         os.remove(os.path.join(app.config['UPLOAD_FOLDER'], img.filename))
-        print(f"[DEBUG] Datei gelöscht: {img.filename}", file=sys.stderr)
     except Exception as e:
-        print(f"[DEBUG] Fehler beim Löschen der Datei: {e}", file=sys.stderr)
         pass
     db.session.delete(img)
     db.session.commit()
-    print(f"[DEBUG] Bild-Objekt gelöscht: {image_id}", file=sys.stderr)
     flash('Bild gelöscht.', 'success')
     # Environment-Objekt frisch laden, mit reload-Parameter um Browser-Cache zu umgehen
-    return redirect(url_for('edit_environment', env_id=env_id, _anchor='env-image-list'))
+    return render_template('redirect.html', target=f"environment/{env_id}/edit#env-image-list")
 
 # Umgebung-Übersicht
 @app.route('/environment/<int:env_id>')
@@ -873,7 +876,7 @@ def environment_overview(env_id):
     env = Environment.query.get_or_404(env_id)
     if env.user_id != current_user.id:
         flash('Keine Berechtigung.', 'danger')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     plants = Plant.query.filter_by(environment_id=env.id, user_id=current_user.id).all()
     logs = EnvironmentLog.query.filter_by(environment_id=env.id).all()
     logs_sorted = sorted(logs, key=lambda x: x.date, reverse=True)
@@ -919,7 +922,7 @@ def add_plant_log_global():
                 db.session.add(measurement)
         db.session.commit()
         flash('Log-Eintrag hinzugefügt.', 'success')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     return render_template('plant_log_form.html', form=form, plant=None, global_mode=True)
 
 
@@ -956,7 +959,7 @@ def add_environment_log_global():
                 db.session.add(measurement)
         db.session.commit()
         flash('Log-Eintrag hinzugefügt.', 'success')
-        return redirect(url_for('dashboard'))
+        return render_template('redirect.html', target='dashboard')
     return render_template('environment_log_form.html', form=form, env=None, global_mode=True)
 
 # Globaler Bild-Upload
@@ -999,5 +1002,5 @@ def add_image_global():
                         db.session.add(img)
             db.session.commit()
             flash('Bilder hochgeladen.', 'success')
-            return redirect(url_for('dashboard'))
+            return render_template('redirect.html', target='dashboard')
     return render_template('image_upload_form.html', form=form)
