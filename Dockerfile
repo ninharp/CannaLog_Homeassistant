@@ -21,7 +21,8 @@ RUN echo "Flask==2.3.3" > requirements.txt && \
     echo "WTForms==3.0.1" >> requirements.txt && \
     echo "gunicorn==21.2.0" >> requirements.txt && \
     echo "Pillow==10.0.0" >> requirements.txt && \
-    echo "Werkzeug==2.3.7" >> requirements.txt
+    echo "Werkzeug==2.3.7" >> requirements.txt && \
+    echo "WeasyPrint==61.2" >> requirements.txt
 
 # Set up virtualenv and install Python dependencies
 RUN python3 -m venv /venv \
