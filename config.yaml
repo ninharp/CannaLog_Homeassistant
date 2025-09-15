@@ -1,6 +1,6 @@
 name: "CannaLog"
 description: "A modern web application for managing plants, environments, measurements, actions and images"
-version: "1.0.42"
+version: "1.0.43"
 slug: "cannalog"
 init: false
 arch:
@@ -28,11 +28,11 @@ map:
   - ssl:rw
   - config:rw
 options:
-  secret_key: "change-this-secret-key-in-production"
+  secret_key: "change-this-secret-key"
   debug: false
   max_upload_mb: 20
 schema:
   secret_key: str
   debug: bool
   max_upload_mb: int
-#image: "ghcr.io/ninharp/addon-cannalog"
+image: "ghcr.io/ninharp/addon-cannalog"
