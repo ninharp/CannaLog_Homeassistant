@@ -16,7 +16,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
 
 app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static', 'uploads'))
 
-max_upload_mb = int(os.environ.get('MAX_UPLOAD_MB', 20))
+max_upload_mb_env = os.environ.get('MAX_UPLOAD_MB')
+try:
+    max_upload_mb = int(max_upload_mb_env)
+except (TypeError, ValueError):
+    max_upload_mb = 20
 app.config['MAX_CONTENT_LENGTH'] = max_upload_mb * 1024 * 1024  # MB zu Bytes
 
 # app.debug = True if os.environ.get('DEBUG', 'your-secret-key') == 'your-secret-key' else False
