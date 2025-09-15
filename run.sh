@@ -3,12 +3,15 @@
 # Set up environment variables (robust for local and HA)
 SECRET_KEY=$(bashio::config 'secret_key')
 export SECRET_KEY
-echo "DEBUG: run.sh SECRET_KEY is: $SECRET_KEY"
 
 DEBUG=$(bashio::config 'debug')
 export DEBUG
 
 export FLASK_APP=run.py
+
+# Ensure persistent directories exist
+mkdir -p /share/cannalog/database
+mkdir -p /share/cannalog/uploads
 
 # Create symlinks for persistent data
 if [ ! -L "/app/cannalog.db" ]; then
@@ -17,7 +20,11 @@ if [ ! -L "/app/cannalog.db" ]; then
     else
         # Initialize database if it doesn't exist
         cd /app
-    /venv/bin/python -c "from app import db; db.create_all()" || true
+        /venv/bin/python <<EOF || true
+from app import app, db
+with app.app_context():
+    db.create_all()
+EOF
         mv cannalog.db "/share/cannalog/database/cannalog.db" 2>/dev/null || true
         ln -sf "/share/cannalog/database/cannalog.db" "/app/cannalog.db"
     fi
@@ -35,43 +42,13 @@ import os
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', '$SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///cannalog.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////share/cannalog/database/cannalog.db'
     UPLOAD_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), 'app', 'static', 'uploads'))
     MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20MB max upload
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Home Assistant Ingress configuration
     APPLICATION_ROOT = '/api/hassio_ingress/'
     PREFERRED_URL_SCHEME = 'http'
-EOF
-
-# Modify the Flask app to work with Home Assistant Ingress
-cat > /app/app/__init__.py << 'EOF'
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
-from flask_migrate import Migrate
-import os
-
-app = Flask(__name__)
-
-# Configuration
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'your-secret-key')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///cannalog.db'
-app.config['UPLOAD_FOLDER'] = os.path.abspath(os.path.join(os.path.dirname(__file__), 'static', 'uploads'))
-app.config['MAX_CONTENT_LENGTH'] = 20 * 1024 * 1024  # 20MB max upload
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Home Assistant Ingress support
-if os.environ.get('HASSIO_TOKEN'):
-    app.config['APPLICATION_ROOT'] = '/api/hassio_ingress/'
-    app.config['PREFERRED_URL_SCHEME'] = 'http'
-
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-from app import routes, models
 EOF
 
 bashio::log.info "Starting CannaLog..."
@@ -88,18 +65,18 @@ with app.app_context():
         print('Database tables created successfully')
         
         # Create default admin user if none exists
-        from app.models import User
-        from werkzeug.security import generate_password_hash
-        if not User.query.first():
-            admin = User(
-                username='admin',
-                password=generate_password_hash('admin123')
-            )
-            db.session.add(admin)
-            db.session.commit()
-            print('Default admin user created: admin/admin123')
-        else:
-            print('Users already exist, skipping admin creation')
+        # from app.models import User
+        # from werkzeug.security import generate_password_hash
+        # if not User.query.first():
+        #    admin = User(
+        #        username='admin',
+        #        password=generate_password_hash('admin123')
+        #    )
+        #    db.session.add(admin)
+        #    db.session.commit()
+        #    print('Default admin user created: admin/admin123')
+        # else:
+        #    print('Users already exist, skipping admin creation')
             
     except Exception as e:
         print(f'Database initialization error: {e}')
@@ -108,9 +85,9 @@ with app.app_context():
 # Set proper permissions
 chown -R root:root /app
 chmod -R 755 /app
-# chmod -R 777 /share/cannalog
+chmod -R 777 /share/cannalog
 
 bashio::log.info "CannaLog configuration complete. Starting application..."
 
 # Start the Flask application with gunicorn from virtualenv
-exec /venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 120 --access-logfile - --error-logfile - run:app
+exec /venv/bin/gunicorn --bind 0.0.0.0:5000 --workers 1 --timeout 120 --access-logfile - --error-logfile - app:app
