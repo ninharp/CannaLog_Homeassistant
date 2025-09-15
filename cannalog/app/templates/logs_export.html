@@ -10,7 +10,7 @@
         {% else %}
           <span style="font-size:2em;">Cannalog</span>
         {% endif %}
-        <h2 style="margin:0.2em 0 0.5em 0;">Log-Bericht</h2>
+        <h2 style="margin:0.2em 0 0.5em 0;">Bericht</h2>
       </div>
     </div>
 {% else %}
@@ -120,7 +120,7 @@
   <br/>
 
   {% if combined %}
-    <h4>Pflanzen-Logs & Aktionen</h4>
+    <h4>Pflanzen-Logs</h4>
     {% set plant_entries = {} %}
     {# Gruppiere alle Einträge nach Pflanze #}
     {% for entry in combined %}
@@ -134,13 +134,14 @@
     {% endfor %}
     {% for plant_id, data in plant_entries.items() %}
       {% set plant = data['plant'] %}
+      <div style="height:0.7em;"></div>
       <div style="margin-bottom:1.2em;">
         <div style="font-size:1.05em;">
             Pflanze: {{ plant.pflanzenname }} | Anzahl: {{ plant_counts[plant.id] if plant_counts and plant.id in plant_counts else 1 }} | Strain: {{ plant.strain }} | Medium: {{ media_type_map.get(plant.medium_type, plant.medium_type|capitalize) }}
             {% if plant.notes %}<br><span>Notizen: {{ plant.notes }}</span>{% endif %}
         </div>
       </div>
-      <div style="height:0.7em;"></div>
+
       <table class="table table-bordered table-sm" style="width:100%; margin-bottom:1.5em;">
         <thead>
           <tr>
