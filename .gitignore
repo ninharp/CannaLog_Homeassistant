@@ -37,4 +37,5 @@ cannalog/.env
 
 # Temporary files
 *.tmp
-*.log
+*.loginstance/
+docs/superpowers/

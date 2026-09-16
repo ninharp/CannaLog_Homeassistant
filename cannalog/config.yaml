@@ -1,0 +1,36 @@
+name: CannaLog
+version: "1.1.0"
+image: ghcr.io/ninharp/{arch}-cannalog-addon
+slug: cannalog
+description: Grow-Tagebuch für Pflanzen, Umgebungen, Messwerte, Aktionen und Bilder
+url: https://github.com/ninharp/CannaLog
+arch:
+  - aarch64
+  - amd64
+init: false
+startup: application
+boot: auto
+ingress: true
+ingress_port: 5000
+panel_icon: mdi:cannabis
+panel_title: CannaLog
+ports:
+  5000/tcp: 5000
+ports_description:
+  5000/tcp: CannaLog Weboberfläche (direkter Zugriff ohne Home Assistant)
+watchdog: "http://[HOST]:[PORT:5000]/healthz"
+map:
+  - type: share
+    read_only: false
+options:
+  secret_key: ""
+  allow_registration: true
+  secure_cookies: false
+  max_upload_mb: 20
+  debug: false
+schema:
+  secret_key: password?
+  allow_registration: bool
+  secure_cookies: bool
+  max_upload_mb: int(1,500)
+  debug: bool

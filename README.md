@@ -1,42 +1,28 @@
-# CannaLog Home Assistant Add-on
+# CannaLog für Home Assistant
 
-![Logo](https://raw.githubusercontent.com/ninharp/CannaLog/main/app/static/assets/logo.png)
+![Logo](logo.png)
 
-A Home Assistant add-on for the CannaLog plant management application.
+Home-Assistant-App (früher „Add-on“) für [CannaLog](https://github.com/ninharp/CannaLog),
+ein privates Grow-Tagebuch für Pflanzen, Umgebungen, Messwerte, Aktionen und Bilder.
 
-## About
-
-CannaLog ist eine moderne, private Web-App zur Verwaltung von Pflanzen, Umgebungen, Messwerten, Aktionen und Bildern – optimiert für Desktop und Smartphone. Diese Add-on-Version bringt CannaLog direkt in deine Home Assistant Installation mit vollständiger Ingress-Unterstützung.
-
-## Features
-
-- 🌱 Pflanzen- und Umgebungsverwaltung
-- 📊 Messwerte-Logging (Temperatur, Feuchtigkeit, pH, EC, etc.)
-- 📝 Aktionen-Log für Pflanzen (Gießen, Düngen, Umtopfen)
-- 📸 Bild-Upload und -verwaltung
-- 📱 Responsive Design für Desktop und Mobile
-- 🔗 Vollständige Home Assistant Integration mit Ingress
-- 📂 Persistente Datenspeicherung
+- Zugriff über die Seitenleiste (Ingress) **und** direkt über Port 5000
+- Log-Export als Bericht oder PDF
+- Daten dauerhaft in `/share/cannalog/`
+- aarch64 (Raspberry Pi 4/5, Green, Yellow) und amd64
 
 ## Installation
 
-1. Füge dieses Repository zu deinen Home Assistant Add-on Repositories hinzu
-2. Installiere das "CannaLog" Add-on
-3. Konfiguriere das Add-on nach deinen Wünschen
-4. Starte das Add-on
-5. Greife über die Home Assistant Seitenleiste auf CannaLog zu
+[![Repository hinzufügen](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fninharp%2FCannaLog_HomeAssistant)
 
-## Konfiguration
+1. Einstellungen → Apps → App-Store → ⋮ → Repositories →
+   `https://github.com/ninharp/CannaLog_HomeAssistant` hinzufügen
+2. „CannaLog“ installieren und starten
+3. In der Seitenleiste „CannaLog“ öffnen und ein Konto registrieren
 
-```yaml
-secret_key: "dein-sehr-geheimer-schluessel"
-debug: false
-```
+Optionen und Details: [cannalog/DOCS.md](cannalog/DOCS.md)
 
-## Datenpersistenz
+## Entwicklung
 
-Alle Daten werden im `/share/cannalog/` Verzeichnis gespeichert und bleiben bei Updates erhalten.
-
-## Original Repository
-
-Basiert auf: [CannaLog by ninharp](https://github.com/ninharp/CannaLog)
+App-Code und Image-Build liegen in [ninharp/CannaLog](https://github.com/ninharp/CannaLog).
+Dieses Repository enthält nur die App-Definition; Home Assistant lädt das fertige Image
+`ghcr.io/ninharp/{arch}-cannalog-addon` aus der GitHub Container Registry.
