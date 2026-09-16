@@ -5,6 +5,10 @@
 Home-Assistant-App (früher „Add-on“) für [CannaLog](https://github.com/ninharp/CannaLog),
 ein privates Grow-Tagebuch für Pflanzen, Umgebungen, Messwerte, Aktionen und Bilder.
 
+![CannaLog-Übersicht](https://raw.githubusercontent.com/ninharp/CannaLog/main/assets/screenshot_dashboard.png)
+
+- Übersicht nach Zelt: Phase, Tag seit dem Start, letzte Aktion und aktuelles Klima
+- Aktionen, Messwerte (pH, EC, Temperatur, Luftfeuchte, VPD …) und Fotos erfassen, am Handy über eine feste Schnellleiste
 - Zugriff über die Seitenleiste (Ingress) **und** direkt über Port 5000
 - Log-Export als Bericht oder PDF
 - Daten dauerhaft in `/share/cannalog/`
@@ -18,6 +22,18 @@ ein privates Grow-Tagebuch für Pflanzen, Umgebungen, Messwerte, Aktionen und Bi
    `https://github.com/ninharp/CannaLog_HomeAssistant` hinzufügen
 2. „CannaLog“ installieren und starten
 3. In der Seitenleiste „CannaLog“ öffnen und ein Konto registrieren
+
+## Screenshots
+
+| Pflanze | Bericht |
+| --- | --- |
+| ![Pflanze](https://raw.githubusercontent.com/ninharp/CannaLog/main/assets/screenshot_plant_overview.png) | ![Bericht](https://raw.githubusercontent.com/ninharp/CannaLog/main/assets/screenshot_report.png) |
+
+<p>
+  <img src="https://raw.githubusercontent.com/ninharp/CannaLog/main/assets/screenshot_mobile_dashboard.png" alt="Übersicht am Handy" width="250">
+  <img src="https://raw.githubusercontent.com/ninharp/CannaLog/main/assets/screenshot_mobile_plant.png" alt="Pflanze am Handy" width="250">
+  <img src="https://raw.githubusercontent.com/ninharp/CannaLog/main/assets/screenshot_mobile_action.png" alt="Aktion am Handy" width="250">
+</p>
 
 Optionen und Details: [cannalog/DOCS.md](cannalog/DOCS.md)
 

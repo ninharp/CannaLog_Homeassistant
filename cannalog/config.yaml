@@ -1,5 +1,5 @@
 name: CannaLog
-version: "1.1.0"
+version: "1.2.0"
 image: ghcr.io/ninharp/{arch}-cannalog-addon
 slug: cannalog
 description: Grow-Tagebuch für Pflanzen, Umgebungen, Messwerte, Aktionen und Bilder
