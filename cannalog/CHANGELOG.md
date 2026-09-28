@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.1] - 2026-09-28
+
+### Behoben
+- Bei fehlerhaften Eingaben stand nur „Bitte prüfe die markierten Felder“, ohne dass etwas
+  markiert war. Jetzt wird das betroffene Feld rot umrandet, die Meldung steht direkt darunter,
+  und die Sammelmeldung oben listet Feld und Grund — auch für die Messwert- und Lampenzeilen,
+  die vorher gar keine Fehler angezeigt haben.
+- Fehlermeldungen sind auf Deutsch statt „This field is required.“
+
 ## [1.2.0] - 2026-09-16
 
 ### Geändert
