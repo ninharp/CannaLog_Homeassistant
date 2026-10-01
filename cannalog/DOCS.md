@@ -15,6 +15,15 @@ Die App ist auf zwei Wegen erreichbar, beide gleichzeitig:
 
 CannaLog hat eine eigene Benutzerverwaltung. Beim ersten Aufruf registrierst du dich einmal.
 
+## API-Zugang
+
+Mit einem Token können Home Assistant, ein Bedienpanel oder ein Skript Aktionen, Messungen und
+Klimawerte eintragen. Das Token erzeugst du in CannaLog auf der Seite „API“, es wird nur einmal
+angezeigt. Die Schnittstelle liegt unter `/api/v1` und ist über den **direkten Port** erreichbar,
+also `http://<home-assistant-ip>:5000/api/v1/…`. Über die Seitenleiste (Ingress) ist sie nicht
+gedacht. Alle Endpunkte und Beispiele stehen im
+[README](https://github.com/ninharp/CannaLog#api).
+
 ## Optionen
 
 | Option | Standard | Bedeutung |

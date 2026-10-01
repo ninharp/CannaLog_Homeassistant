@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0] - 2026-10-01
+
+### Neu
+- Einträge können eine Uhrzeit haben. Sie steht in Listen und im Bericht hinter dem Datum.
+- API-Zugang: Unter „API“ lässt sich ein Token erzeugen. Damit können Home Assistant oder ein
+  Bedienpanel Aktionen, Messungen und Klimawerte eintragen (`/api/v1`, siehe README).
+
 ## [1.2.1] - 2026-09-28
 
 ### Behoben
