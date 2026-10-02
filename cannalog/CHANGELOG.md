@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0] - 2026-10-02
+
+### Neu
+- API: `/api/v1/environments?recent=10` liefert zusätzlich die letzten Einträge je Umgebung
+  (Aktionen und Messungen, neueste zuerst). Ein Bedienpanel kann damit den Verlauf anzeigen.
+
 ## [1.3.0] - 2026-10-01
 
 ### Neu
